@@ -1,0 +1,9 @@
+# 本地工具产物
+.mimosa/
+.v2c/
+.DS_Store
+*.log
+*.tmp/
+
+# 打包中间产物（dist/linux-init.sh 保留提交，便于直接下载单文件）
+.build-verify/
