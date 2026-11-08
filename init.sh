@@ -89,30 +89,30 @@ main() {
     exit 1
   }
 
-  if looks_right "$DEST" 2>/dev/null; then
-    warn "已存在 $DEST 且体量正确 → 复用本地文件（断点续跑场景）；如需更新请 rm 后重跑"
-  else
-    local done=0
-    # 通道顺序（2026-11 实测）：codeload 直连 → fastly jsDelivr → cdn jsDelivr → ghproxy 镜像 → raw 直连
-    try_codeload && done=1
-    if [[ $done -eq 0 ]]; then
-      for u in \
-        "https://fastly.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
-        "https://cdn.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
-        "https://ghproxy.net/https://raw.githubusercontent.com/$REPO/$TAG/dist/linux-init.sh" \
-        "https://raw.githubusercontent.com/$REPO/$TAG/dist/linux-init.sh"; do
-        info "尝试通道: $u"
-        try_url "$u" && { done=1; break; } || warn "通道失败，切换下一个..."
-      done
-    fi
-    [[ $done -eq 1 ]] || {
-      err "所有下载通道均失败（网络受限？）"
-      err "应急方案: git clone https://github.com/$REPO.git && sudo bash $REPO/linux-init.sh"
-      exit 1
-    }
+  local done=0
+  # 始终优先拉取最新版（断点续跑状态存在 /var/lib/linux-init/state.env，与脚本文件无关）
+  # 通道顺序（2026-11 实测）：codeload 直连 → fastly jsDelivr → cdn jsDelivr → ghproxy 镜像 → raw 直连
+  try_codeload && done=1
+  if [[ $done -eq 0 ]]; then
+    for u in \
+      "https://fastly.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
+      "https://cdn.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
+      "https://ghproxy.net/https://raw.githubusercontent.com/$REPO/$TAG/dist/linux-init.sh" \
+      "https://raw.githubusercontent.com/$REPO/$TAG/dist/linux-init.sh"; do
+      info "尝试通道: $u"
+      try_url "$u" && { done=1; break; } || warn "通道失败，切换下一个..."
+    done
+  fi
+  if [[ $done -eq 1 ]]; then
     ok "下载完成: $DEST ($(wc -c < "$DEST") bytes)"
     command -v sha256sum >/dev/null 2>&1 && \
       ok "SHA256: $(sha256sum "$DEST" | awk '{print $1}')"
+  elif looks_right "$DEST" 2>/dev/null; then
+    warn "所有通道失败，回退使用本地已有副本: $DEST"
+  else
+    err "所有下载通道均失败（网络受限？）"
+    err "应急方案: git clone https://github.com/$REPO.git && sudo bash $REPO/linux-init.sh"
+    exit 1
   fi
 
   # ---- 启动（非 root 自动提权；环境变量透传给主脚本） ----

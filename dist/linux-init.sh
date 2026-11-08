@@ -581,7 +581,7 @@ PREFIX=$plen"
       append_block /etc/network/interfaces.d/linux-init "${body%$'\n'}"
       ;;
   esac
-  if [[ ${#NIC_PLAN[@]+"${#NIC_PLAN[@]}"} -gt 0 ]]; then
+  if [[ ${#NIC_PLAN[@]} -gt 0 ]]; then
     state_set INFO_NET "$(printf '%s ' ${NIC_PLAN[@]+"${NIC_PLAN[@]}"} | tr '|' ' ')"
     ok "网络配置已写入（默认不激活，重启后生效）"
   fi
@@ -589,12 +589,12 @@ PREFIX=$plen"
 step_5() {
   write_hosts_entries || return 1
   local has_nic_args=0
-  [[ ${#ARG_NICS[@]+"${ARG_NICS[@]}"} -gt 0 ]] && has_nic_args=1
+  [[ ${#ARG_NICS[@]} -gt 0 ]] && has_nic_args=1
   if [[ $ASSUME_YES -eq 1 ]]; then
     if [[ $has_nic_args -eq 0 ]]; then info "未指定 --nic，跳过网卡配置"; return 0; fi
     local spec
     for spec in ${ARG_NICS[@]+"${ARG_NICS[@]}"}; do parse_nic_spec "$spec" || return 1; done
-    apply_nic_activation "$([[ ${#NIC_PLAN[@]+"${NIC_PLAN[@]}"} -gt 0 ]] && echo 1 || echo 0)"
+    apply_nic_activation "$([[ ${#NIC_PLAN[@]} -gt 0 ]] && echo 1 || echo 0)"
     return 0
   fi
   # 交互模式
@@ -615,7 +615,7 @@ step_5() {
     for token in ${tokens[@]+"${tokens[@]}"}; do
       token="${token//[[:space:]]/}"
       [[ -z "$token" ]] && continue
-      if [[ "$token" =~ ^[0-9]+$ ]] && [[ "$token" -lt ${#all_nics[@]+"${#all_nics[@]}"} ]]; then
+      if [[ "$token" =~ ^[0-9]+$ ]] && [[ "$token" -lt ${#all_nics[@]} ]]; then
         chosen+=("${all_nics[$token]}")
       else
         found=0
@@ -623,7 +623,7 @@ step_5() {
         [[ $found -eq 0 ]] && warn "忽略无效选择: $token"
       fi
     done
-    [[ ${#chosen[@]+"${#chosen[@]}"} -eq 0 ]] && { warn "未选择任何网卡"; return 0; }
+    [[ ${#chosen[@]} -eq 0 ]] && { warn "未选择任何网卡"; return 0; }
     local first=1 cur_gw gw_in dns_in cidr_in
     cur_gw="$(ip route show default 2>/dev/null | awk '{for(i=1;i<=NF;i++) if($i=="via") print $(i+1); exit}')"
     for nic in ${chosen[@]+"${chosen[@]}"}; do
@@ -660,7 +660,7 @@ step_5() {
 apply_nic_activation() {  # $1: 是否有计划(1/0)
   [[ "${1:-0}" -eq 1 ]] || return 0
   write_nic_configs || return 1
-  [[ ${#NIC_PLAN[@]+"${NIC_PLAN[@]}"} -eq 0 ]] && return 0
+  [[ ${#NIC_PLAN[@]} -eq 0 ]] && return 0
   [[ $DRY_RUN -eq 1 ]] && return 0
   if confirm "是否立即激活网络配置？（默认否=仅写入，重启后生效，更安全）" n; then
     if command -v netplan >/dev/null 2>&1; then
@@ -860,14 +860,14 @@ collect_pubkeys() {  # 汇总 ARG_PUBKEYS(内联) / 文件 / URL / 交互粘贴 
       [[ -n "$line" && "$line" != \#* ]] && valid_pubkey "$line" && PUBKEYS+=("$line")
     done <<< "$fetched"
   fi
-  if [[ ${#PUBKEYS[@]+"${#PUBKEYS[@]}"} -eq 0 && $ASSUME_YES -eq 0 ]]; then
+  if [[ ${#PUBKEYS[@]} -eq 0 && $ASSUME_YES -eq 0 ]]; then
     info "请粘贴 SSH 公钥（可多行，每行一条；空行结束）"
     while IFS= read -r line </dev/tty 2>/dev/null; do
       [[ -z "${line//[[:space:]]/}" ]] && break
       valid_pubkey "$line" && PUBKEYS+=("$line") || warn "忽略无效行: ${line:0:30}..."
     done
   fi
-  [[ ${#PUBKEYS[@]+"${#PUBKEYS[@]}"} -gt 0 ]] && ok "已收集公钥 ${#PUBKEYS[@]} 条"
+  [[ ${#PUBKEYS[@]} -gt 0 ]] && ok "已收集公钥 ${#PUBKEYS[@]} 条"
   return 0
 }
 write_authorized_keys() {
@@ -915,13 +915,13 @@ step_9() {
     else
       printf '%s:%s\n' "$TARGET_USER" "$USER_PASSWORD" | run_cmd chpasswd && ok "密码已设置（值不落日志）"
     fi
-  elif [[ ${#PUBKEYS[@]+"${#PUBKEYS[@]}"} -eq 0 ]]; then
+  elif [[ ${#PUBKEYS[@]} -eq 0 ]]; then
     err "必须提供密码（环境变量 LINUX_INIT_USER_PASSWORD）或至少一条 SSH 公钥"
     return 1
   else
     warn "未设置密码：SSH 走密钥、sudo 走免密（D3），但本地控制台无法登录该用户"
   fi
-  [[ ${#PUBKEYS[@]+"${#PUBKEYS[@]}"} -gt 0 ]] && write_authorized_keys
+  [[ ${#PUBKEYS[@]} -gt 0 ]] && write_authorized_keys
   # sudo 策略（D3: 默认 NOPASSWD）
   if [[ $SUDO_REQUIRE_PASSWORD -eq 0 ]]; then
     local sud="/etc/sudoers.d/99-linux-init"
@@ -1020,7 +1020,7 @@ step_11() {
     fi
     warn "用户 $TARGET_USER 尚无 SSH 公钥（安全红线：必须先配置密钥）"
     collect_pubkeys || return 1
-    [[ ${#PUBKEYS[@]+"${#PUBKEYS[@]}"} -gt 0 ]] || { err "未提供任何公钥，放弃 SSH 加固"; return 1; }
+    [[ ${#PUBKEYS[@]} -gt 0 ]] || { err "未提供任何公钥，放弃 SSH 加固"; return 1; }
     write_authorized_keys || return 1
   fi
   # ---- 端口 ----
@@ -1563,7 +1563,7 @@ module_should_skip() {
     2)  [[ $SKIP_UPDATE -eq 1 ]] ;;
     3)  [[ $SKIP_TIME -eq 1 ]] ;;
     4)  [[ $ASSUME_YES -eq 1 && -z "$ARG_HOSTNAME" ]] ;;
-    5)  [[ $ASSUME_YES -eq 1 && ${#ARG_NICS[@]+"${#ARG_NICS[@]}"} -eq 0 && ${#ARG_HOSTS_ENTRIES[@]+"${#ARG_HOSTS_ENTRIES[@]}"} -eq 0 ]] ;;
+    5)  [[ $ASSUME_YES -eq 1 && ${#ARG_NICS[@]} -eq 0 && ${#ARG_HOSTS_ENTRIES[@]} -eq 0 ]] ;;
     6)  [[ $KEEP_FIREWALL -eq 1 ]] ;;
     7)  [[ "$ARG_TUNE" == "off" ]] ;;
     8)  [[ "${ARG_TOOLS:-basic}" == "none" ]] ;;
@@ -1758,7 +1758,7 @@ main() {
   precheck
 
   # 模块选择
-  if [[ ${#RUN_MODULES[@]+"${#RUN_MODULES[@]}"} -eq 0 ]]; then
+  if [[ ${#RUN_MODULES[@]} -eq 0 ]]; then
     if [[ $ASSUME_YES -eq 1 || $ARG_ALL -eq 1 ]]; then
       RUN_MODULES=("${MODULE_ORDER[@]}")
       [[ $ASSUME_YES -eq 1 ]] && info "无人值守模式：按推荐顺序执行全部模块"
@@ -1771,7 +1771,7 @@ main() {
   mapfile -t RUN_MODULES < <(printf '%s\n' ${RUN_MODULES[@]+"${RUN_MODULES[@]}"} | sort -nu)
 
   # 交互全跑时，询问默认关闭的可选模块（4/5 在各自模块内询问）
-  if [[ $ASSUME_YES -eq 0 && ${#RUN_MODULES[@]+"${#RUN_MODULES[@]}"} -gt 5 ]]; then
+  if [[ $ASSUME_YES -eq 0 && ${#RUN_MODULES[@]} -gt 5 ]]; then
     if printf '%s\n' ${RUN_MODULES[@]+"${RUN_MODULES[@]}"} | grep -qx 10 && [[ $WITH_DOCKER -eq 0 ]]; then
       confirm "是否安装 Docker（模块 10，默认跳过）？" n && WITH_DOCKER=1
     fi
@@ -1792,7 +1792,7 @@ main() {
   ran13=1
 
   # 退出码
-  if [[ ${#FAILED_MODULES[@]+"${#FAILED_MODULES[@]}"} -gt 0 ]]; then
+  if [[ ${#FAILED_MODULES[@]} -gt 0 ]]; then
     err "存在失败模块: ${FAILED_MODULES[*]}（详见日志 $LOG_FILE）"
     exit 20
   fi
