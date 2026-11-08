@@ -306,6 +306,13 @@ cleanup() {
   return 0
 }
 
+# 文本控制台（tty）检测：内核控制台字体无中文字形，中文必然乱码
+is_text_console() {
+  [[ "${TERM:-}" == "linux" || -z "${TERM:-}" ]] && return 0
+  local cm; cm="$(locale charmap 2>/dev/null || echo unknown)"
+  [[ "$cm" != "UTF-8" ]]
+}
+
 # ---------------------------------------------------------------- 模块元数据
 declare -A MODULE_NAME=(
   [1]="更换国内软件源"              [2]="系统与软件更新"          [3]="时区与时间同步"
@@ -1516,10 +1523,11 @@ show_menu() {
     printf '\n'
   done
   printf '   %s\n' "──  ──────────────────────────  ──────────"
-  printf '   %sa%s   全部执行（按推荐顺序 1→13）\n' "$C_BOLD" "$C_OFF"
-  printf '   %sv%s   查看上次运行报告\n' "$C_BOLD" "$C_OFF"
-  printf '   %sq%s   退出\n' "$C_BOLD" "$C_OFF"
-  printf '\n   选择: 输入编号运行模块，可多选（如 2 3 7），将按推荐顺序执行\n'
+   printf '   %sa%s   全部执行（按推荐顺序 1→13）\n' "$C_BOLD" "$C_OFF"
+   printf '   %sv%s   查看上次运行报告\n' "$C_BOLD" "$C_OFF"
+   printf '   %sq%s   退出\n' "$C_BOLD" "$C_OFF"
+   printf '\n   选择: 输入编号运行模块，可多选（如 2 3 7），将按推荐顺序执行\n'
+   printf '   %sInput: module IDs (e.g. 2 3 7) | a = run all | v = last report | q = quit%s\n' "$C_GRAY" "$C_OFF"
 }
 menu_loop() {
   local inp token found
@@ -1756,6 +1764,10 @@ main() {
   detect_os
   info "系统识别: ${PRETTY_NAME:-$OS_ID}（$OS_FAMILY 族，包管理 $PKG，SSH 服务 $SSH_SVC）"
   precheck
+  if is_text_console; then
+    warn "检测到文本控制台（tty）：中文将显示为乱码，操作不受影响（输入编号/字母即可）"
+    warn "Text console detected: CJK shows as garbage. Recommend: run via SSH from your desktop."
+  fi
 
   # 模块选择
   if [[ ${#RUN_MODULES[@]} -eq 0 ]]; then
