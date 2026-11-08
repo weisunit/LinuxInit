@@ -14,7 +14,7 @@
 set -u
 
 SCRIPT_VERSION="1.0.0"
-REQ_DOC_VERSION="v0.6"
+REQ_DOC_VERSION="v0.7"
 
 # ---------------------------------------------------------------- 路径与常量
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || echo "${BASH_SOURCE[0]}")"
