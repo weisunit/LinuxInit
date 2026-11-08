@@ -10,15 +10,15 @@
 **新装机器只需一行**（自动多通道下载 → 落盘 → 非 root 自动提权 → 启动交互主菜单）：
 
 ```bash
-bash <(curl -sSL https://cdn.jsdelivr.net/gh/weisunit/LinuxInit@main/init.sh)
+bash <(curl -sSL https://fastly.jsdelivr.net/gh/weisunit/LinuxInit@v1.0.1/init.sh)
 ```
 
-- 引导脚本依次尝试 4 个下载通道（GitHub codeload 直连 → jsDelivr 双 CDN → ghproxy 镜像 → raw 直连），全部失败会给出 git clone 应急方案；
+- 引导脚本按实测顺序尝试 5 个下载通道（**GitHub codeload 直连 → fastly jsDelivr → cdn jsDelivr → ghproxy 镜像 → raw 直连**），全部失败会给出 git clone 应急方案；下载后校验文件形态（bash 脚本 + 体量）防污染页；
 - 主脚本落盘 `~/linux-init.sh`（含内嵌 vendor，单文件自足），**NVIDIA 装完重启后重跑 `sudo bash ~/linux-init.sh` 即自动续跑验证**；
 - 无人值守一行流（密码走环境变量，不进 history；新装机最小系统若无 curl/wget 会自动用现有源安装）：
 
 ```bash
-LINUX_INIT_USER_PASSWORD='改成你的密码' bash <(curl -sSL https://cdn.jsdelivr.net/gh/weisunit/LinuxInit@main/init.sh) \
+LINUX_INIT_USER_PASSWORD='改成你的密码' bash <(curl -sSL https://fastly.jsdelivr.net/gh/weisunit/LinuxInit@v1.0.1/init.sh) \
   --yes --user deploy --ssh-port 22222 \
   --pubkey-url https://github.com/<user>.keys --with-docker
 ```

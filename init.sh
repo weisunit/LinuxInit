@@ -93,12 +93,12 @@ main() {
     warn "已存在 $DEST 且体量正确 → 复用本地文件（断点续跑场景）；如需更新请 rm 后重跑"
   else
     local done=0
-    # 通道顺序：codeload → jsDelivr（双 CDN）→ ghproxy 镜像 → raw 直连
+    # 通道顺序（2026-11 实测）：codeload 直连 → fastly jsDelivr → cdn jsDelivr → ghproxy 镜像 → raw 直连
     try_codeload && done=1
     if [[ $done -eq 0 ]]; then
       for u in \
-        "https://cdn.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
         "https://fastly.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
+        "https://cdn.jsdelivr.net/gh/$REPO@$TAG/dist/linux-init.sh" \
         "https://ghproxy.net/https://raw.githubusercontent.com/$REPO/$TAG/dist/linux-init.sh" \
         "https://raw.githubusercontent.com/$REPO/$TAG/dist/linux-init.sh"; do
         info "尝试通道: $u"
