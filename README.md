@@ -7,11 +7,34 @@
 
 ## 快速开始
 
-```bash
-# 方式一：源码形态（本仓库）
-sudo bash linux-init.sh              # 交互主菜单（推荐新手）
+**新装机器只需一行**（自动多通道下载 → 落盘 → 非 root 自动提权 → 启动交互主菜单）：
 
-# 方式二：单文件分发（内嵌 vendor，离线可用）
+```bash
+bash <(curl -sSL https://cdn.jsdelivr.net/gh/weisunit/LinuxInit@main/init.sh)
+```
+
+- 引导脚本依次尝试 4 个下载通道（GitHub codeload 直连 → jsDelivr 双 CDN → ghproxy 镜像 → raw 直连），全部失败会给出 git clone 应急方案；
+- 主脚本落盘 `~/linux-init.sh`（含内嵌 vendor，单文件自足），**NVIDIA 装完重启后重跑 `sudo bash ~/linux-init.sh` 即自动续跑验证**；
+- 无人值守一行流（密码走环境变量，不进 history；新装机最小系统若无 curl/wget 会自动用现有源安装）：
+
+```bash
+LINUX_INIT_USER_PASSWORD='改成你的密码' bash <(curl -sSL https://cdn.jsdelivr.net/gh/weisunit/LinuxInit@main/init.sh) \
+  --yes --user deploy --ssh-port 22222 \
+  --pubkey-url https://github.com/<user>.keys --with-docker
+```
+
+- 版本锁定：默认拉 `main`，稳定环境可 `LINUX_INIT_VERSION=v1.0.0 bash <(curl -sSL .../init.sh)`。
+
+**源码形态（可审查/可定制）**：
+
+```bash
+git clone https://github.com/weisunit/LinuxInit.git
+cd LinuxInit && sudo bash linux-init.sh        # 交互主菜单（推荐新手）
+```
+
+**单文件直发**（内嵌 vendor，离线可用）：
+
+```bash
 scp dist/linux-init.sh root@<服务器>:/root/
 ssh root@<服务器> 'bash /root/linux-init.sh'
 ```
